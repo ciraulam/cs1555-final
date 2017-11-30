@@ -24,8 +24,8 @@ CREATE TABLE friends (
 	JDate   date          NOT NULL,
 	message varchar2(200) DEFAULT NULL,
 	CONSTRAINT pk_friends PRIMARY KEY(userID1, userID2) DEFERRABLE INITIALLY IMMEDIATE,
-	CONSTRAINT fk_friends_userID1 FOREIGN KEY(userID1) REFERENCES profile(userID) DEFERRABLE INITIALLY IMMEDIATE,
-	CONSTRAINT fk_friends_userID2 FOREIGN KEY(userID2) REFERENCES profile(userID) DEFERRABLE INITIALLY IMMEDIATE
+	CONSTRAINT fk_friends_userID1 FOREIGN KEY(userID1) REFERENCES profile(userID) ON DELETE CASCADE,
+	CONSTRAINT fk_friends_userID2 FOREIGN KEY(userID2) REFERENCES profile(userID) ON DELETE CASCADE
 );
 
 CREATE TABLE pendingFriends (
@@ -33,8 +33,9 @@ CREATE TABLE pendingFriends (
 	toID    varchar2(20),
 	message varchar2(200) DEFAULT NULL,
 	CONSTRAINT pk_pending_friends PRIMARY KEY(fromID, toID) DEFERRABLE INITIALLY IMMEDIATE,
-	CONSTRAINT fk_pendingFriends_fromID FOREIGN KEY(fromID) REFERENCES profile(userID) DEFERRABLE INITIALLY IMMEDIATE,
-	CONSTRAINT fk_pendingFriends_toID FOREIGN KEY(toID) REFERENCES profile(userID) DEFERRABLE INITIALLY IMMEDIATE
+        --I CANT CALL THESE WITHOUT GETTING AN ERROR! HELP.
+	CONSTRAINT fk_pendingFriends_fromID FOREIGN KEY(fromID) REFERENCES profile(userID) ON DELETE CASCADE,
+	CONSTRAINT fk_pendingFriends_toID FOREIGN KEY(toID) REFERENCES profile(userID) ON DELETE CASCADE   
 );
 
 CREATE TABLE groups (
@@ -52,8 +53,8 @@ CREATE TABLE messages (
 	toGroupID varchar2(20)  DEFAULT NULL,
 	dateSent  date          NOT NULL,
 	CONSTRAINT pk_messages PRIMARY KEY(msgID) DEFERRABLE INITIALLY IMMEDIATE,
-        CONSTRAINT fk_messages_fromID FOREIGN KEY(fromID) REFERENCES profile(userID) DEFERRABLE INITIALLY IMMEDIATE,
-	CONSTRAINT fk_messages_toGroupID FOREIGN KEY(toGroupID) REFERENCES groups(gID) DEFERRABLE INITIALLY IMMEDIATE
+        CONSTRAINT fk_messages_fromID FOREIGN KEY(fromID) REFERENCES profile(userID) ON DELETE CASCADE,
+	CONSTRAINT fk_messages_toGroupID FOREIGN KEY(toGroupID) REFERENCES groups(gID)  ON DELETE CASCADE
 );
 
 CREATE TABLE messageRecipient (
@@ -61,7 +62,7 @@ CREATE TABLE messageRecipient (
 	userID varchar2(20),
 	CONSTRAINT pk_messageRecipient PRIMARY KEY(msgID, userID) DEFERRABLE INITIALLY IMMEDIATE,
 	--NOTE: I used both msgID and userID for the pk in case one message could be sent to multiple people via a group
-	CONSTRAINT fk_messageRecipient_userID FOREIGN KEY(userID) REFERENCES profile(userID) DEFERRABLE INITIALLY IMMEDIATE
+	CONSTRAINT fk_messageRecipient_userID FOREIGN KEY(userID) REFERENCES profile(userID)  ON DELETE CASCADE
 );
 
 CREATE TABLE groupMembership (
@@ -69,8 +70,8 @@ CREATE TABLE groupMembership (
 	userID varchar2(20),
 	role   varchar2(20) DEFAULT 'member', --assuming this is the default vaule for role
 	CONSTRAINT pk_groupMembership PRIMARY KEY(gID, userID) DEFERRABLE INITIALLY IMMEDIATE,
-	CONSTRAINT fk_groupMembership_gID FOREIGN KEY(gID) REFERENCES groups(gID) DEFERRABLE INITIALLY IMMEDIATE,
-	CONSTRAINT fk_groupMembership_userID FOREIGN KEY(userID) REFERENCES profile(userID) DEFERRABLE INITIALLY IMMEDIATE
+	CONSTRAINT fk_groupMembership_gID FOREIGN KEY(gID) REFERENCES groups(gID)  ON DELETE CASCADE,
+	CONSTRAINT fk_groupMembership_userID FOREIGN KEY(userID) REFERENCES profile(userID)  ON DELETE CASCADE
 );
 
 CREATE TABLE pendingGroupMembers (
@@ -78,13 +79,14 @@ CREATE TABLE pendingGroupMembers (
 	userID  varchar2(20),
 	message varchar2(200) DEFAULT NULL,
 	CONSTRAINT pk_pendingGroupMembers PRIMARY KEY(gID, userID) DEFERRABLE INITIALLY IMMEDIATE,
-	CONSTRAINT fk_pendingGroupMembers_gID FOREIGN KEY(gID) REFERENCES groups(gID) DEFERRABLE INITIALLY IMMEDIATE,
-	CONSTRAINT fk_pendingGroupMembers_userID FOREIGN KEY(userID) REFERENCES profile(userID) DEFERRABLE INITIALLY IMMEDIATE
+	CONSTRAINT fk_pendingGroupMembers_gID FOREIGN KEY(gID) REFERENCES groups(gID)  ON DELETE CASCADE,
+	CONSTRAINT fk_pendingGroupMembers_userID FOREIGN KEY(userID) REFERENCES profile(userID) ON DELETE CASCADE
 );
 
 -- a trigger to increment the userID and insert it whenever a new user is added to the profile table 
 DROP SEQUENCE user_sequence;
-CREATE SEQUENCE user_sequence;
+CREATE SEQUENCE user_sequence
+   start with 1; 
 CREATE OR REPLACE TRIGGER increment_userID 
 BEFORE INSERT ON profile 
 FOR EACH ROW
@@ -178,12 +180,19 @@ BEGIN
 END; 
 /
 
---delete messages once a user is deleted 
-CREATE OR REPLACE TRIGGER delete_user
-BEFORE DELETE ON profile
+--insert into messageRecipient when a message is sent to a group 
+CREATE OR REPLACE TRIGGER group_message
+BEFORE INSERT ON messages
 FOR EACH ROW
-BEGIN 
-   UPDATE messages SET fromID = NULL WHERE fromID = :old.userID;
-   UPDATE messageRecipient SET userID = NULL WHERE userID = :old.userID; 
-END; 
+DECLARE 
+   ID varchar(20); 
+BEGIN
+   IF :new.toGroupID IS NOT NULL THEN
+     SELECT userID INTO ID 
+     FROM groupMembership
+     WHERE groupMembership.gID = :new.toGroupID; 
+     
+     INSERT INTO messageRecipient(msgID, userID) VALUES (:new.msgID, ID);
+   END IF;
+END;
 /

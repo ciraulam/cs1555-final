@@ -1,6 +1,7 @@
 import java.sql.*; 
 import java.text.*; 
 import java.util.Random; 
+import java.util.Scanner;
 
 public class DBFunctions{
 
@@ -175,8 +176,8 @@ public class DBFunctions{
         public static void main(String[] args)
         { 
         String username, password;
-	username = "iyb7"; //This is your username in oracle
-	password = "3970115"; //This is your password in oracle
+	username = "mac365"; //This is your username in oracle
+	password = "3916901"; //This is your password in oracle
 	
 	try{
 	    // Register the oracle driver.  
@@ -189,7 +190,8 @@ public class DBFunctions{
 	    //create a connection to DB on class3.cs.pitt.edu
 	    connection = DriverManager.getConnection(url, username, password); 
               DBFunctions dbf1 = new DBFunctions();
-              dbf1.demo();
+              //dbf1.demo();
+              dbf1.mattDemo();
 	    
 	}
 	catch(Exception Ex)  {
@@ -211,5 +213,191 @@ public class DBFunctions{
                    System.out.println(sqle.getMessage());
                }
 	}
-    }  
+    }
+
+    private void mattDemo() {
+        login("1", "password");
+        //confirmFriends("2");
+        createGroup("124", "skateboarderz", "skate or die", 100, "1");
+        //sendMessageToUser("1", "let's skate", "2");
+        displayMessages("1");
+    }
+
+    public void login(String username, String pwd) {
+        try {
+            query = "SELECT userID, password FROM profile WHERE userID = ? AND password = ?";
+            prepStatement = connection.prepareStatement(query);
+            prepStatement.setString(1, username);
+            prepStatement.setString(2, pwd);
+            resultSet = prepStatement.executeQuery();
+
+            // need to set some sort of flag to show logged in
+            if(!resultSet.isBeforeFirst()) {
+                System.out.println("Failed login as " + username);    // login denied
+            } else {
+                // update last login to be now
+                query = "UPDATE profile SET lastLogin = CURRENT_TIMESTAMP WHERE userID = ?";
+                prepStatement = connection.prepareStatement(query);
+                prepStatement.setString(1, username);
+                prepStatement.executeUpdate();
+                connection.commit();
+                System.out.println("Successfully logged in as " + username);
+            }
+        } catch(SQLException sqle) {
+            System.out.println(sqle.getMessage());
+        }
+    }
+
+    public void confirmFriends(String userID) {
+        try {
+            query = "SELECT fromID, message FROM  pendingFriends WHERE toID = ?";
+            prepStatement = connection.prepareStatement(query);
+            prepStatement.setString(1, userID);
+            resultSet = prepStatement.executeQuery();
+            
+            if(!resultSet.isBeforeFirst()) 
+                System.out.println("No friend requests");
+
+            int count = 1;
+            while(resultSet.next()) {
+                // print out line of dashes
+                System.out.println(new String(new char[80]).replace("\0", "-"));
+                System.out.println("Friend request #" + count++);
+                System.out.println("From: " + resultSet.getString(1) );
+                System.out.println("Message: \n\t" + resultSet.getString(2));
+            }
+
+            // print line seperating the last message
+            System.out.println(new String(new char[80]).replace("\0", "-") + "\n");
+
+            query = "SELECT gID, message FROM pendingGroupMembership WHERE userID = ?";
+            prepStatement.setString(1, userID);
+            resultSet = prepStatement.executeQuery();
+
+            if(!resultSet.isBeforeFirst())
+                System.out.println("No group invites");
+
+            count = 1;
+            while(resultSet.next()) {
+                System.out.println(new String(new char[80]).replace("\0", "-"));
+                System.out.println("Group request #" + count++);
+                System.out.println("From group: " + resultSet.getString(1));
+                System.out.println("Message: \n\t" + resultSet.getString(2));
+            }
+        } catch(SQLException sqle) {
+            System.out.println(sqle.getMessage());
+        }
+        /////////////////////////
+    }
+
+    public void createGroup(String gID, String name, String description, int limit, String founder) {
+        try {
+            query = "INSERT INTO groups(gID, name, description, group_limit) VALUES(?, ?, ?, ?)";
+            prepStatement = connection.prepareStatement(query);
+            prepStatement.setString(1, gID);
+            prepStatement.setString(2, name);
+            prepStatement.setString(3, description);
+            prepStatement.setInt(4, limit);
+            prepStatement.executeUpdate();
+            connection.commit();
+            System.out.println("Successfully created group " + name);
+            query = "INSERT INTO groupMembership(gID, userID, role) VALUES(?, ?, 'manager')";
+            prepStatement = connection.prepareStatement(query);
+            prepStatement.setString(1, gID);
+            prepStatement.setString(2, founder);
+            connection.commit();
+            System.out.println("Added " + founder + " as manager");
+        } catch(SQLException sqle) {
+            System.out.println(sqle.getMessage());
+        }
+    }
+
+    public void sendMessageToUser(String fromUsername, String message, String toUsername) {
+        try {
+            query = "INSERT INTO messages(fromID, message, toUserID, dateSent) VALUES(?, ?, ?, CURRENT_TIMESTAMP)";
+            prepStatement = connection.prepareStatement(query);
+            prepStatement.setString(1, fromUsername);
+            prepStatement.setString(2, message);
+            prepStatement.setString(3, toUsername);
+            prepStatement.executeUpdate();
+            connection.commit();
+            System.out.println("Sent message from " + fromUsername + " to " + toUsername);
+        } catch(SQLException sqle) {
+            System.out.println(sqle.getMessage());
+        }
+    }
+
+    public void displayMessages(String toUsername) {
+        try {
+            query = "SELECT fromID, message FROM messages WHERE toUserID = ?";
+            prepStatement = connection.prepareStatement(query);
+            prepStatement.setString(1, toUsername);
+            resultSet = prepStatement.executeQuery();
+
+            if(!resultSet.isBeforeFirst()) {
+                System.out.println("No messages");
+            } else {
+                while(resultSet.next()) {
+                    System.out.println(new String(new char[80]).replace("\0", "-"));
+                    System.out.println("From: " + resultSet.getString(1));
+                    System.out.println("Message: \n\t" + resultSet.getString(2));
+                }
+                System.out.println(new String(new char[80]).replace("\0", "-"));
+            }
+        } catch(SQLException sqle) {
+            System.out.println(sqle.getMessage());
+        }
+    }
+
+    public void searchForUser(String input) {
+        try {
+            query = "SELECT name FROM profile WHERE userID LIKE ?";
+            prepStatement = connection.prepareStatement(query);
+            prepStatement.setString(1, input);
+            resultSet = prepStatement.executeQuery();
+
+            if(!resultSet.isBeforeFirst()) 
+                System.out.println("No results found");
+            else {
+                while(resultSet.next()) {
+                    System.out.println("Found user " + resultSet.getString(1));
+                }
+            }
+        } catch(SQLException sqle) {
+            System.out.println(sqle.getMessage());
+        }
+    }
+
+    public void topMessages(int months, int numRows) {
+        try {
+            query = "SELECT messageRecipient.userID, count(*) FROM (SELECT messageRecipient.userID, count(*) FROM messageRecipient JOIN messages ON messageRecipient.userID = messages.toUserID WHERE messages.date > DATEADD(month, -?, CURRENT_TIMESTAMP) GROUP BY messageRecipient.userID) WHERE rownum < ?";
+            prepStatement = connection.prepareStatement(query);
+            prepStatement.setInt(1, months);
+            prepStatement.setInt(2, numRows);
+            resultSet = prepStatement.executeQuery();
+            
+            if(!resultSet.isBeforeFirst())
+                System.out.println("No results");
+            else {
+                int count = 1;
+                while(resultSet.next()) {
+                    System.out.println("Rank: " + count + " UserID: " + resultSet.getString(1) + " # of messages: " + resultSet.getInt(2));
+                }
+            }
+        } catch(SQLException sqle) {
+            System.out.println(sqle.getMessage());
+        }
+    }
+
+    public void logout(String userID) {
+        try {
+            query = "UPDATE profile SET lastLogout CURRENT_TIMESTAMP WHERE userID = ?";
+            prepStatement = connection.prepareStatement(query);
+            prepStatement.setString(1, userID);
+            prepStatement.executeUpdate();
+            System.out.println("Logged userID: " + userID + " out");
+        } catch(SQLException sqle) {
+            System.out.println(sqle.getMessage());
+        }
+    }
 }

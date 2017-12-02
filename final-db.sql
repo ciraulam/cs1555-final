@@ -14,6 +14,7 @@ CREATE TABLE profile (
         email	      varchar(15) NOT NULL,
 	date_of_birth date,
 	lastLogin     timestamp,
+	lastLogout    timestamp,
 	CONSTRAINT pk_profile PRIMARY KEY(userID) DEFERRABLE INITIALLY IMMEDIATE,
         CONSTRAINT email_uq UNIQUE(email) DEFERRABLE INITIALLY IMMEDIATE
 );
@@ -49,6 +50,7 @@ CREATE TABLE groups (
 CREATE TABLE messages (
 	msgID     varchar2(20),
 	fromID    varchar2(20)  NOT NULL,
+	toUserID  varchar2(20)  DEFAULT NULL,
 	message   varchar2(200) DEFAULT NULL,
 	toGroupID varchar2(20)  DEFAULT NULL,
 	dateSent  date          NOT NULL,
@@ -196,3 +198,23 @@ BEGIN
    END IF;
 END;
 /
+
+--sets appropriate values in messageRecipient when a message is sent
+CREATE OR REPLACE TRIGGER new_message
+AFTER INSERT ON messages
+FOR EACH ROW
+DECLARE
+	ID varchar(20);
+BEGIN
+	IF :new.toUserID IS NOT NULL THEN
+		INSERT INTO messageRecipient(msgID, userID) VALUES (:new.msgID, :new.toUserID);
+	END IF;
+END;
+/
+
+--for testing purposes
+INSERT INTO profile(name, password, email) VALUES ('Matt', 'password', 'm@m.com');
+INSERT INTO profile(name, password, email) VALUES ('Bob', 'password', 'b@b.com');
+INSERT INTO pendingFriends(fromID, toID, message) VALUES (1, 2, 'hi');
+INSERT INTO messages(msgID, fromID, toUserID, message, dateSent) VALUES('1', '2', '1', 'hey', SYSDATE);
+COMMIT;

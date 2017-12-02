@@ -247,29 +247,6 @@ public class DBFunctions{
                 System.out.println("error displaying new messages: " + sqle.getMessage());
             }
         }
-        public void demo()
-        {
-            //just a demo function to help me test out these functions
-            Date dob = null;
-            try{
-                  dob = new Date(date_format.parse("1996-09-28").getTime()); 
-            }
-            catch(ParseException e)
-            {
-                System.out.println(e.getMessage());
-            }
-            
-            this.createUser("Iyanna Buffaloe", "iyb7@pitt.edu", dob);
-            this.createUser("Jimi Hendrix", "iljimi@pitt.edu", dob); 
-            this.createUser("third person", "tp3@pitt.edu",dob); 
-            this.createUser("person four", "prf@pitt.edu", dob);
-            this.initiateFriendship("1", "2","hi");                 
-            this.initiateFriendship("2", "3", "hey");
-            this.initiateFriendship("1", "3", "wassup"); 
-            this.initiateFriendship("2", "4", "hi");
-            this.initiateFriendship("1", "4", "yoooo"); 
-            this.initiateAddingGroup("1", "1", "hey");
-        }
         
         public static void main(String[] args)
         { 

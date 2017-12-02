@@ -266,8 +266,6 @@ public class DBFunctions{
 	    //create a connection to DB on class3.cs.pitt.edu
 	    connection = DriverManager.getConnection(url, username, password); 
               DBFunctions dbf1 = new DBFunctions();
-              //dbf1.demo();
-              dbf1.mattDemo();
 	    
 	}
 	catch(Exception Ex)  {
@@ -291,39 +289,58 @@ public class DBFunctions{
 	}
     }
 
+/*****************************************************************************************************************************************************
+**                                     ALL FUNCTIONS ABOVE THIS LINE WRITTEN BY IYANNA BUFFALOE                                                     **
+**                                                                                                                                                  **
+**                                     ALL FUNCTIONS BELOW THIS LINE WRITTEN BY MATTHEW CIRAULA                                                     **
+*****************************************************************************************************************************************************/
+
+    /* Demonstrates functions written by Matthew Ciraula
+    */
     private void mattDemo() {
         login("1", "password");
-        //confirmFriends("2");
-        createGroup("124", "skateboarderz", "skate or die", 100, "1");
-        //sendMessageToUser("1", "let's skate", "2");
+        confirmFriends("2");
+        createGroup("124", "new group", "this is new", 100, "1");
+        sendMessageToUser("1", "hello there", "2");
         displayMessages("1");
+        searchForUser("1");
+        topMessages(2, 2);
+        logout("1");
     }
 
-    public void login(String username, String pwd) {
+    /* checks db for a matching userID and password combination
+    ** if a match is found the last login value on their profile is updated
+    ** @param userID: String representing userID
+    ** @param pwd: String representing password
+    */
+    public void login(String userID, String pwd) {
         try {
             query = "SELECT userID, password FROM profile WHERE userID = ? AND password = ?";
             prepStatement = connection.prepareStatement(query);
-            prepStatement.setString(1, username);
+            prepStatement.setString(1, userID);
             prepStatement.setString(2, pwd);
             resultSet = prepStatement.executeQuery();
 
             // need to set some sort of flag to show logged in
             if(!resultSet.isBeforeFirst()) {
-                System.out.println("Failed login as " + username);    // login denied
+                System.out.println("Failed login as " + userID);    // login denied
             } else {
                 // update last login to be now
                 query = "UPDATE profile SET lastLogin = CURRENT_TIMESTAMP WHERE userID = ?";
                 prepStatement = connection.prepareStatement(query);
-                prepStatement.setString(1, username);
+                prepStatement.setString(1, userID);
                 prepStatement.executeUpdate();
                 connection.commit();
-                System.out.println("Successfully logged in as " + username);
+                System.out.println("Successfully logged in as " + userID);
             }
         } catch(SQLException sqle) {
             System.out.println(sqle.getMessage());
         }
     }
 
+    /* prints out all pending friend and group requests
+    ** @param userID: the userID of user to whom requests were sent
+    */
     public void confirmFriends(String userID) {
         try {
             query = "SELECT fromID, message FROM  pendingFriends WHERE toID = ?";
@@ -363,10 +380,16 @@ public class DBFunctions{
         } catch(SQLException sqle) {
             System.out.println(sqle.getMessage());
         }
-        /////////////////////////
     }
 
-    public void createGroup(String gID, String name, String description, int limit, String founder) {
+    /* creates a new group
+    ** @param gID: group ID
+    ** @param name: name of group
+    ** @param description: brief description
+    ** @param limit: maximum number of group members
+    ** @param manager: userID of manager
+    */
+    public void createGroup(String gID, String name, String description, int limit, String manager) {
         try {
             query = "INSERT INTO groups(gID, name, description, group_limit) VALUES(?, ?, ?, ?)";
             prepStatement = connection.prepareStatement(query);
@@ -377,32 +400,41 @@ public class DBFunctions{
             prepStatement.executeUpdate();
             connection.commit();
             System.out.println("Successfully created group " + name);
+            // now make groupMembership entry for manager
             query = "INSERT INTO groupMembership(gID, userID, role) VALUES(?, ?, 'manager')";
             prepStatement = connection.prepareStatement(query);
             prepStatement.setString(1, gID);
-            prepStatement.setString(2, founder);
+            prepStatement.setString(2, manager);
             connection.commit();
-            System.out.println("Added " + founder + " as manager");
+            System.out.println("Added " + manager + " as manager");
         } catch(SQLException sqle) {
             System.out.println(sqle.getMessage());
         }
     }
 
-    public void sendMessageToUser(String fromUsername, String message, String toUsername) {
+    /* Sends a message
+    ** @param fromUserID: sender's ID
+    ** @param message: message text
+    ** @param toUserID: recipient's ID
+    */
+    public void sendMessageToUser(String fromUserID, String message, String toUserID) {
         try {
             query = "INSERT INTO messages(fromID, message, toUserID, dateSent) VALUES(?, ?, ?, CURRENT_TIMESTAMP)";
             prepStatement = connection.prepareStatement(query);
-            prepStatement.setString(1, fromUsername);
+            prepStatement.setString(1, fromUserID);
             prepStatement.setString(2, message);
-            prepStatement.setString(3, toUsername);
+            prepStatement.setString(3, toUserID);
             prepStatement.executeUpdate();
             connection.commit();
-            System.out.println("Sent message from " + fromUsername + " to " + toUsername);
+            System.out.println("Sent message from " + fromUserID + " to " + toUserID);
         } catch(SQLException sqle) {
             System.out.println(sqle.getMessage());
         }
     }
 
+    /* displays all messages a user has recieved
+    ** @param toUserID: userID of recipient
+    */
     public void displayMessages(String toUsername) {
         try {
             query = "SELECT fromID, message FROM messages WHERE toUserID = ?";
@@ -414,17 +446,20 @@ public class DBFunctions{
                 System.out.println("No messages");
             } else {
                 while(resultSet.next()) {
-                    System.out.println(new String(new char[80]).replace("\0", "-"));
+                    System.out.println(new String(new char[80]).replace("\0", "-"));    // these are just lines
                     System.out.println("From: " + resultSet.getString(1));
                     System.out.println("Message: \n\t" + resultSet.getString(2));
                 }
-                System.out.println(new String(new char[80]).replace("\0", "-"));
+                System.out.println(new String(new char[80]).replace("\0", "-"));    // these are just lines
             }
         } catch(SQLException sqle) {
             System.out.println(sqle.getMessage());
         }
     }
 
+    /* searches for user with a containing a specific string 
+    ** @param input: string we are searching for
+    */
     public void searchForUser(String input) {
         try {
             query = "SELECT name FROM profile WHERE userID LIKE ?";
@@ -444,9 +479,13 @@ public class DBFunctions{
         }
     }
 
+    /* displays the users who have recieved the most messages
+    ** @param months: how many months back are we starting from
+    ** @param numRows: the number of users to include in output
+    */
     public void topMessages(int months, int numRows) {
         try {
-            query = "SELECT messageRecipient.userID, count(*) FROM (SELECT messageRecipient.userID, count(*) FROM messageRecipient JOIN messages ON messageRecipient.userID = messages.toUserID WHERE messages.date > DATEADD(month, -?, CURRENT_TIMESTAMP) GROUP BY messageRecipient.userID) WHERE rownum < ?";
+            query = "SELECT messageRecipient.userID, count(*) FROM (SELECT messageRecipient.userID, count(*) FROM messageRecipient JOIN messages ON messageRecipient.userID = messages.toUserID WHERE messages.date > DATEADD(month, -?, CURRENT_TIMESTAMP) GROUP BY messageRecipient.userID ORDER BY count(*) DESC) WHERE rownum < ?";
             prepStatement = connection.prepareStatement(query);
             prepStatement.setInt(1, months);
             prepStatement.setInt(2, numRows);
@@ -465,6 +504,9 @@ public class DBFunctions{
         }
     }
 
+    /* sets last logout to now for given userID
+    ** @param userID: user to log out
+    */
     public void logout(String userID) {
         try {
             query = "UPDATE profile SET lastLogout CURRENT_TIMESTAMP WHERE userID = ?";

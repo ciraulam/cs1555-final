@@ -212,13 +212,6 @@ BEGIN
 END;
 /
 
---for testing purposes
-INSERT INTO profile(name, password, email) VALUES ('Matt', 'password', 'm@m.com');
-INSERT INTO profile(name, password, email) VALUES ('Bob', 'password', 'b@b.com');
-INSERT INTO pendingFriends(fromID, toID, message) VALUES (1, 2, 'hi');
-INSERT INTO messages(msgID, fromID, toUserID, message, dateSent) VALUES('1', '2', '1', 'hey', SYSDATE);
-COMMIT;
----
 --delete user from groups once they are deleted from the system
 CREATE OR REPLACE TRIGGER delete_group_member
 BEFORE DELETE ON profile

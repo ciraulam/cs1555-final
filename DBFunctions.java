@@ -127,6 +127,105 @@ public class DBFunctions{
             }
         }
         
+        /*
+        * I'm going to return the resultSet of the query so that I can use it in a different function 
+        */
+        public ResultSet displayFriends(String user_ID)
+        {
+            try {
+                query = "SELECT name, userID FROM friends, profile "+
+                        "WHERE (userID1 = ? OR userID2 = ?) AND ((userID1 = ? AND userID2 = userID) OR (userID2 = ? AND userID1 = userID))"; 
+                prepStatement = connection.prepareStatement(query); 
+                prepStatement.setString(1, user_ID);
+                prepStatement.setString(2, user_ID);
+                prepStatement.setString(3, user_ID); 
+                prepStatement.setString(4, user_ID); 
+                
+                resultSet = prepStatement.executeQuery(); 
+                
+                if (!resultSet.isBeforeFirst()) //user doesnt have any friends
+                {
+                    System.out.println("User #" + user_ID + " does not have any friends"); 
+                }
+                else //user has friends
+                {
+                    System.out.println("Friends of user # " + user_ID+ ": ");
+                    while(resultSet.next())
+                    {
+                       System.out.print("Name: '" + resultSet.getString("name")+ "', "); 
+                       System.out.print("User #: " + resultSet.getString("userID")); 
+                    }
+                }
+             return resultSet;
+            }
+            catch (SQLException sqle)
+            {
+                System.out.println("error displaying friends: " + sqle.getMessage());
+            }
+            return null; 
+        }
+        
+        public String threeDegrees(String user_ID1, String user_ID2)
+        {
+            String path = user_ID1 + "-> ";
+            String person2 = "";
+            String person3 = "";
+            String person4 = "";
+            try{
+                resultSet = this.displayFriends(user_ID1); 
+                while(resultSet.next())
+                {
+                    person2 = resultSet.getString("userID"); 
+                    if (person2.equals(user_ID2))   //directly friends with the person (1 friendship)
+                    {
+                        path += person2; 
+                        return path;  
+                    }
+                   ResultSet rs2 = this.displayFriends(person2); 
+                   while(rs2.next())
+                   {
+                       person3 = resultSet.getString("userID"); 
+                       if (person3.equals(user_ID2))    //two friendships
+                       {
+                           path += person2 + " -> " + person3;  
+                           return path; 
+                       }
+                       ResultSet rs3 = this.displayFriends(person3); 
+                       while (rs3.next())
+                       {
+                           person4 = rs3.getString("userID"); 
+                           if (person4.equals(user_ID2))     //third and final friendship 
+                           {
+                               path+= person2 + "-> " + person3 + "-> " + person4; 
+                               return path; 
+                           }
+                       }
+                   }
+                }
+               
+            }
+            catch (SQLException sqle)
+            {
+                System.out.println("error finding three degrees: " + sqle.getMessage()); 
+            }
+            path = "No path exists between the two users within three degrees"; 
+            return path; 
+        }
+        public void dropUser(String userID)
+        {
+            try {
+                query = "DELETE profile WHERE userID = ?"; 
+                prepStatement = connection.prepareStatement(query); 
+                prepStatement.setString(1, userID);
+                
+                prepStatement.executeUpdate();
+                connection.commit(); 
+            }
+            catch (SQLException sqle)
+            {
+                System.out.println("error deleting user: " + sqle.getMessage());
+            }
+        }
         public void displayNewMessages(String userID)
         {
             try
@@ -148,29 +247,6 @@ public class DBFunctions{
             {
                 System.out.println("error displaying new messages: " + sqle.getMessage());
             }
-        }
-        public void demo()
-        {
-            //just a demo function to help me test out these functions
-            Date dob = null;
-            try{
-                  dob = new Date(date_format.parse("1996-09-28").getTime()); 
-            }
-            catch(ParseException e)
-            {
-                System.out.println(e.getMessage());
-            }
-            
-            this.createUser("Iyanna Buffaloe", "iyb7@pitt.edu", dob);
-            this.createUser("Jimi Hendrix", "iljimi@pitt.edu", dob); 
-            this.createUser("third person", "tp3@pitt.edu",dob); 
-            this.createUser("person four", "prf@pitt.edu", dob);
-            this.initiateFriendship("1", "2","hi");                 
-            this.initiateFriendship("2", "3", "hey");
-            this.initiateFriendship("1", "3", "wassup"); 
-            this.initiateFriendship("2", "4", "hi");
-            this.initiateFriendship("1", "4", "yoooo"); 
-            this.initiateAddingGroup("1", "1", "hey");
         }
         
         public static void main(String[] args)

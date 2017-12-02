@@ -55,8 +55,8 @@ CREATE TABLE messages (
 	toGroupID varchar2(20)  DEFAULT NULL,
 	dateSent  date          NOT NULL,
 	CONSTRAINT pk_messages PRIMARY KEY(msgID) DEFERRABLE INITIALLY IMMEDIATE,
-        CONSTRAINT fk_messages_fromID FOREIGN KEY(fromID) REFERENCES profile(userID) ON DELETE CASCADE,
-	CONSTRAINT fk_messages_toGroupID FOREIGN KEY(toGroupID) REFERENCES groups(gID)  ON DELETE CASCADE
+        CONSTRAINT fk_messages_fromID FOREIGN KEY(fromID) REFERENCES profile(userID) ON DELETE SET NULL,
+	CONSTRAINT fk_messages_toGroupID FOREIGN KEY(toGroupID) REFERENCES groups(gID)  ON DELETE SET NULL
 );
 
 CREATE TABLE messageRecipient (
@@ -218,3 +218,30 @@ INSERT INTO profile(name, password, email) VALUES ('Bob', 'password', 'b@b.com')
 INSERT INTO pendingFriends(fromID, toID, message) VALUES (1, 2, 'hi');
 INSERT INTO messages(msgID, fromID, toUserID, message, dateSent) VALUES('1', '2', '1', 'hey', SYSDATE);
 COMMIT;
+---
+--delete user from groups once they are deleted from the system
+CREATE OR REPLACE TRIGGER delete_group_member
+BEFORE DELETE ON profile
+FOR EACH ROW
+BEGIN
+   DELETE FROM groupMembership 
+   WHERE userID = :old.userID; 
+END; 
+/
+
+--delete a message only when both users have been deleted from the system
+CREATE OR REPLACE TRIGGER delete_messages
+BEFORE DELETE ON profile
+FOR EACH ROW 
+DECLARE 
+   toID varchar2(20); 
+   from_ID varchar2(20); 
+
+BEGIN
+   UPDATE messages SET fromID = NULL WHERE fromID = :old.userID; 
+   UPDATE messageRecipient SET userID = NULL WHERE userID = :old.userID; 
+
+  DELETE FROM messages WHERE EXISTS (SELECT 'x' FROM messages NATURAL JOIN messageRecipient WHERE messages.fromID = NULL AND messageRecipient.userID = NULL ); 
+  
+END;
+/

@@ -48,13 +48,13 @@ CREATE TABLE groups (
 
 CREATE TABLE messages (
 	msgID     varchar2(20),
-	fromID    varchar2(20)  NOT NULL,
+	fromID    varchar2(20),
 	message   varchar2(200) DEFAULT NULL,
 	toGroupID varchar2(20)  DEFAULT NULL,
 	dateSent  date          NOT NULL,
 	CONSTRAINT pk_messages PRIMARY KEY(msgID) DEFERRABLE INITIALLY IMMEDIATE,
-        CONSTRAINT fk_messages_fromID FOREIGN KEY(fromID) REFERENCES profile(userID) ON DELETE CASCADE,
-	CONSTRAINT fk_messages_toGroupID FOREIGN KEY(toGroupID) REFERENCES groups(gID)  ON DELETE CASCADE
+        CONSTRAINT fk_messages_fromID FOREIGN KEY(fromID) REFERENCES profile(userID) ON DELETE SET NULL,
+	CONSTRAINT fk_messages_toGroupID FOREIGN KEY(toGroupID) REFERENCES groups(gID)  ON DELETE SET NULL
 );
 
 CREATE TABLE messageRecipient (
@@ -196,3 +196,32 @@ BEGIN
    END IF;
 END;
 /
+
+--delete user from groups once they are deleted from the system
+CREATE OR REPLACE TRIGGER delete_group_member
+BEFORE DELETE ON profile
+FOR EACH ROW
+BEGIN
+   DELETE FROM groupMembership 
+   WHERE userID = :old.userID; 
+END; 
+/
+
+--delete a message only when both users have been deleted from the system
+CREATE OR REPLACE TRIGGER delete_messages
+BEFORE DELETE ON profile
+FOR EACH ROW 
+DECLARE 
+   toID varchar2(20); 
+   from_ID varchar2(20); 
+
+BEGIN
+   UPDATE messages SET fromID = NULL WHERE fromID = :old.userID; 
+   UPDATE messageRecipient SET userID = NULL WHERE userID = :old.userID; 
+
+  DELETE FROM messages WHERE EXISTS (SELECT 'x' FROM messages NATURAL JOIN messageRecipient WHERE messages.fromID = NULL AND messageRecipient.userID = NULL ); 
+  
+END;
+/
+
+   

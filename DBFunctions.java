@@ -12,8 +12,11 @@ public class DBFunctions{
     // exists)
     private String query;  //this will hold the query we are using
     private SimpleDateFormat date_format = new SimpleDateFormat("yyyy-MM-dd");
+    private static String loggedInUser; //once the user is logged in, this is the string that keeps track of their ID
+    private static boolean loggedIn = false; //used to keep track of which menu to use
     
-        public void createUser(String name, String email, Date dob)
+    //returns a 1 on success, 0 on failute 
+        public int createUser(String name, String email, java.util.Date dob)
         {
             try {
                 //generate a password 
@@ -35,18 +38,22 @@ public class DBFunctions{
                 prepStatement = connection.prepareStatement(query); 
                 prepStatement.setString(1, name); 
                 prepStatement.setString(2, pw);
-                prepStatement.setString(3, email);               
-                prepStatement.setDate(4, dob); 
+                prepStatement.setString(3, email);     
+                java.sql.Date sqlDate = new java.sql.Date(dob.getTime());
+                prepStatement.setDate(4, sqlDate); 
 
                 
                 prepStatement.executeUpdate(); 
                 connection.commit();
                 System.out.println("User '" + name + "' created.");
-                System.out.println("with password " + pw);
+                System.out.println("with userID " + this.getUserID(email)); 
+                System.out.println("and password " + pw);
+                return 1; 
             }
             catch(SQLException sqle)
             {
-                System.out.println("error adding profile: " + sqle.getMessage());
+                System.out.println("There was an error adding the profile. ");
+                
             }
             finally
             {
@@ -58,6 +65,7 @@ public class DBFunctions{
                     System.out.println("createUser(): Can't close the statement. " + sqle.toString());
                 }
             }
+             return 0;
         }
         /*
         * initiates a friendship between two users from their 
@@ -78,7 +86,8 @@ public class DBFunctions{
                     prepStatement.setString(3, message);
                     prepStatement.executeUpdate(); 
                
-                    connection.commit();        
+                    connection.commit();    
+                    System.out.println("friendship request sent. "); 
             }
             catch(SQLException sqle)
             {
@@ -233,13 +242,13 @@ public class DBFunctions{
                 query = "SELECT fromID, message FROM messages NATURAL JOIN messageRecipient NATURAL JOIN profile WHERE messageRecipient.userID = ? AND messages.datesent > profile.lastLogin";
                 prepStatement = connection.prepareStatement(query);
                 prepStatement.setString(1, userID);
-                
+
                 resultSet = prepStatement.executeQuery(); 
                 while(resultSet.next())
                 {
                     String fromID = resultSet.getString("fromID");
                     String msg = resultSet.getString("message"); 
-                    
+
                     System.out.println("User " + fromID + "sent: " + msg); 
                 }
             }
@@ -249,11 +258,52 @@ public class DBFunctions{
             }
         }
         
+        //helper function to obtain a user's ID given their email
+        public String getUserID(String email)
+        {
+            try {
+            query = "SELECT userID FROM profile WHERE email = ?"; 
+            prepStatement = connection.prepareStatement(query);   
+            prepStatement.setString(1, email); 
+            resultSet = prepStatement.executeQuery(); 
+            
+            resultSet.next(); 
+            String userID = resultSet.getString("userID"); 
+            
+            return userID;
+            }
+            catch (SQLException sqle)
+            {
+                System.out.println("error obtaining userID: " + sqle.getMessage());
+            }
+            return null;
+        }
+        
+        public String getName(String userID)
+        {
+            try {
+            query = "SELECT name FROM profile WHERE userID = ?"; 
+            prepStatement = connection.prepareStatement(query);   
+            prepStatement.setString(1, userID); 
+            resultSet = prepStatement.executeQuery(); 
+            
+            resultSet.next(); 
+            String name = resultSet.getString("name"); 
+            
+            return name;
+            }
+            catch (SQLException sqle)
+            {
+                System.out.println("error obtaining userID: " + sqle.getMessage());
+            }
+            return null;
+        }
+        
         public static void main(String[] args)
         { 
         String username, password;
-	username = "mac365"; //This is your username in oracle
-	password = "3916901"; //This is your password in oracle
+	username = "iyb7"; //This is your username in oracle
+	password = "3970115"; //This is your password in oracle
 	
 	try{
 	    // Register the oracle driver.  
@@ -265,12 +315,141 @@ public class DBFunctions{
 	    
 	    //create a connection to DB on class3.cs.pitt.edu
 	    connection = DriverManager.getConnection(url, username, password); 
-              DBFunctions dbf1 = new DBFunctions();
+            Scanner kb = new Scanner(System.in);
+       int choice = 0; 
+       DBFunctions database = new DBFunctions();    //this is the object that will communicate with the database through the functions we wrote 
+       
+       System.out.println("Welcome to Social@Panther!"); 
+       do
+       {
+        System.out.println("1. Create user");
+        System.out.println("2. Log In"); 
+        System.out.println("0.exit");
+        System.out.print("choice number: ");
+
+        choice = kb.nextInt(); 
+        kb.nextLine();
+           switch (choice) {
+               case 0:
+                   System.exit(0);
+               case 1: //create user
+                   int success = 0; 
+                   while (success != 1)
+                   {
+                    System.out.print("Enter a name: ");
+                    String name = kb.nextLine(); 
+                    System.out.print("Enter an email: "); 
+                    String email = kb.next(); 
+                    kb.nextLine();
+                    java.util.Date date2= null; 
+                    SimpleDateFormat date_format = new SimpleDateFormat("yyyy-MM-dd");
+
+                    while(true)
+                    {
+                     try
+                     {   System.out.print("Enter a date of birth (yyyy-mm-dd format): "); 
+                         String date = kb.next();
+                         kb.nextLine();
+                         date2 = date_format.parse(date);
+                         break;
+                     }
+                     catch(ParseException e)
+                     {
+                         System.out.println("Invalid date. try again.");
+                         System.out.println("\n");
+                     }
+                    }
+                    success = database.createUser(name, email, date2);
+                   }
+                   break;
+               case 2: //log in 
+                   System.out.print("enter user ID: "); 
+                   String userID = kb.next();
+                   kb.nextLine();
+                   System.out.print("enter password: "); 
+                   String pw = kb.next(); 
+                   kb.nextLine(); 
+                   success = database.login(userID, pw);
+                   if (success == 1)
+                   {
+                       loggedInUser = userID; 
+                       loggedIn= true; 
+                   }
+                   break;
+               default:
+                   System.out.println("Invalid choice, try again");
+                   break;
+           }
+           if (loggedIn)
+           {
+               
+               System.out.println("1. Initiate a friendship");
+               System.out.println("2. Confirm a friendship request");
+               System.out.println("3. Display friends"); 
+               System.out.println("4. Create a group");
+               System.out.println("5. Add users to group"); 
+               System.out.println("6. Send a message to a user");
+               System.out.println("7. Send a message to a group"); 
+               System.out.println("8. Display messages"); 
+               System.out.println("9. Display new messages");
+               System.out.println("10. Search for a user");
+               System.out.println("11. Three degrees of seperation: find a path between two users");
+               System.out.println("12. Display top messages");
+               System.out.println("13. Delete this user profile");  //assuming that the only profile you can delete is your own 
+               System.out.println("14. Log out"); 
+               System.out.print("Select a menu option: ");
+               int choice2 = kb.nextInt(); 
+               kb.nextLine(); 
+               
+               switch(choice2)
+               {
+                   case 1:  //initiate a friendship 
+                       System.out.print("user ID of the other user: ");
+                       String userID2 = kb.next(); 
+                       kb.nextLine(); 
+                       String name = database.getName(userID2); 
+                       if (name == null) {
+                           System.out.println("error obtaining user. "); 
+                         }
+                       else 
+                       {
+                           System.out.print("send friend request to " + name + "? (yes/no): ");
+                           String ans = kb.next(); 
+                           kb.nextLine();
+                           if (ans.equals("yes"))
+                           {
+                               
+                               System.out.println("enter message to send with the request:");
+                               String message = kb.nextLine(); 
+                               message = message.substring(0, 200); 
+                               database.initiateFriendship(loggedInUser, userID2, message);
+                           }
+                       }
+                       break;
+                   case 2: //confirm friendship 
+                       break; 
+                   case 3: //display friendships
+                       ResultSet rs = database.displayFriends(loggedInUser); 
+                       
+                       //display the friends of friends of the logged in user 
+                       while(rs.next())
+                       {
+                           String friend = rs.getString("userID"); 
+                           database.displayFriends(friend);
+                       }
+               }
+           }
+         }
+       while (!((choice <= 0) && (choice > 2)));
+       
+           
 	    
 	}
 	catch(Exception Ex)  {
 	    System.out.println("Error connecting to database.  Machine Error: " +
 			       Ex.toString());
+            
+         
         }
 	finally
 	{
@@ -313,7 +492,7 @@ public class DBFunctions{
     ** @param userID: String representing userID
     ** @param pwd: String representing password
     */
-    public void login(String userID, String pwd) {
+    public int login(String userID, String pwd) {
         try {
             query = "SELECT userID, password FROM profile WHERE userID = ? AND password = ?";
             prepStatement = connection.prepareStatement(query);
@@ -324,6 +503,7 @@ public class DBFunctions{
             // need to set some sort of flag to show logged in
             if(!resultSet.isBeforeFirst()) {
                 System.out.println("Failed login as " + userID);    // login denied
+                return 0; 
             } else {
                 // update last login to be now
                 query = "UPDATE profile SET lastLogin = CURRENT_TIMESTAMP WHERE userID = ?";
@@ -332,10 +512,12 @@ public class DBFunctions{
                 prepStatement.executeUpdate();
                 connection.commit();
                 System.out.println("Successfully logged in as " + userID);
+                return 1;
             }
         } catch(SQLException sqle) {
             System.out.println(sqle.getMessage());
         }
+        return 0;
     }
 
     /* prints out all pending friend and group requests

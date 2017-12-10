@@ -323,64 +323,67 @@ public class DBFunctions{
        System.out.println("Welcome to Social@Panther!"); 
        do
        {
-        System.out.println("1. Create user");
-        System.out.println("2. Log In"); 
-        System.out.println("0.exit");
-        System.out.print("choice number: ");
+        if(!loggedIn) {
+          System.out.println("1. Create user");
+          System.out.println("2. Log In"); 
+          System.out.println("0.exit");
+          System.out.print("choice number: ");
 
-        choice = kb.nextInt(); 
-        kb.nextLine();
-           switch (choice) {
-               case 0:
-                   System.exit(0);
-               case 1: //create user
-                   int success = 0; 
-                   while (success != 1)
-                   {
-                    System.out.print("Enter a name: ");
-                    String name = kb.nextLine(); 
-                    System.out.print("Enter an email: "); 
-                    String email = kb.next(); 
-                    kb.nextLine();
-                    java.util.Date date2= null; 
-                    SimpleDateFormat date_format = new SimpleDateFormat("yyyy-MM-dd");
-
-                    while(true)
-                    {
-                     try
-                     {   System.out.print("Enter a date of birth (yyyy-mm-dd format): "); 
-                         String date = kb.next();
-                         kb.nextLine();
-                         date2 = date_format.parse(date);
-                         break;
-                     }
-                     catch(ParseException e)
+          choice = kb.nextInt(); 
+          kb.nextLine();
+             switch (choice) {
+                 case 0:
+                     System.exit(0);
+                 case 1: //create user
+                     int success = 0; 
+                     while (success != 1)
                      {
-                         System.out.println("Invalid date. try again.");
-                         System.out.println("\n");
+                      System.out.print("Enter a name: ");
+                      String name = kb.nextLine(); 
+                      System.out.print("Enter an email: "); 
+                      String email = kb.next(); 
+                      kb.nextLine();
+                      java.util.Date date2= null; 
+                      SimpleDateFormat date_format = new SimpleDateFormat("yyyy-MM-dd");
+
+                      while(true)
+                      {
+                       try
+                       {   System.out.print("Enter a date of birth (yyyy-mm-dd format): "); 
+                           String date = kb.next();
+                           kb.nextLine();
+                           date2 = date_format.parse(date);
+                           break;
+                       }
+                       catch(ParseException e)
+                       {
+                           System.out.println("Invalid date. try again.");
+                           System.out.println("\n");
+                       }
+                      }
+                      success = database.createUser(name, email, date2);
                      }
-                    }
-                    success = database.createUser(name, email, date2);
-                   }
-                   break;
-               case 2: //log in 
-                   System.out.print("enter user ID: "); 
-                   String userID = kb.next();
-                   kb.nextLine();
-                   System.out.print("enter password: "); 
-                   String pw = kb.next(); 
-                   kb.nextLine(); 
-                   success = database.login(userID, pw);
-                   if (success == 1)
-                   {
-                       loggedInUser = userID; 
-                       loggedIn= true; 
-                   }
-                   break;
-               default:
-                   System.out.println("Invalid choice, try again");
-                   break;
+                     break;
+                 case 2: //log in 
+                     System.out.print("enter user ID: "); 
+                     String userID = kb.next();
+                     kb.nextLine();
+                     System.out.print("enter password: "); 
+                     String pw = kb.next(); 
+                     kb.nextLine(); 
+                     success = database.login(userID, pw);
+                     if (success == 1)
+                     {
+                         loggedInUser = userID; 
+                         loggedIn= true; 
+                     }
+                     break;
+                 default:
+                     System.out.println("Invalid choice, try again");
+                     break;
+             }
            }
+           
            if (loggedIn)
            {
                
@@ -428,6 +431,7 @@ public class DBFunctions{
                        }
                        break;
                    case 2: //confirm friendship 
+                       confirmFriends(loggedInUser);
                        break; 
                    case 3: //display friendships
                        ResultSet rs = database.displayFriends(loggedInUser); 
@@ -439,26 +443,70 @@ public class DBFunctions{
                            database.displayFriends(friend);
                        }
                    case 4: //create a group
+                       System.out.print("Enter group ID: ");
+                       String gID = kb.nextLine();
+                       System.out.print("Enter group name: ");
+                       String name = kb.nextLine();
+                       System.out.print("Enter description: ");
+                       String description = kb.nextLine();
+                       System.out.print("Enter membership limit: ");
+                       int limit = kb.nextInt();
+                       kb.nextLine();
+                       createGroup(gID, name, description, limit, loggedInUser);
                        break;
                    case 5: //add users to a group
+                       System.out.print("Enter user ID to invite: ");
+                       String userID = kb.nextLine();
+                       System.out.print("Enter group ID: ");
+                       String gID = kb.nextLine();
+                       System.out.print("Enter message: ");
+                       String message = kb.nextLine();
+                       initiateAddingGroup(userID, gID, message);
                        break;
                    case 6: //send message to user
+                      System.out.print("Enter userID of recipient: ");
+                      String toUserID = kb.nextLine();
+                      System.out.print("Enter message: ");
+                      String message = kb.nextLine();
+                      sendMessageToUser(loggedInUser, message, toUserID);
                       break;
                    case 7: //send message to group
+                      System.out.print("Enter group ID: ");
+                      String gID = kb.nextLine();
+                      System.out.print("Enter message: ");
+                      String message = kb.nextLine();
+                      sendMessageToGroup(gID, loggedInUser, message);
                       break;
                    case 8: //display all messages
+                      displayMessages(loggedInUser);
                       break;
                    case 9: //display new messages
+                      displayNewMessages(loggedInUser);
                       break;
                    case 10: //Search for a user
+                      System.out.print("Enter search: ");
+                      String input = kb.nextLine();
+                      searchForUser(input);
                       break;
                    case 11: //Three degrees of seperation: find a path between two users
+                      System.out.print("Enter first userID: ");
+                      String userID1 = kb.nextLine();
+                      System.out.print("Enter second userID: ");
+                      String userID2 = kb.nextLine();
                       break;
                    case 12: //Display top messages
+                      System.out.print("Enter amount of months to search: ");
+                      int months = kb.nextInt();
+                      kb.nextLine();
+                      System.out.print("Enter number of users to include in results: ");
+                      int users = kb.nextInt();
+                      topMessages(months, users);
                       break;
                    case 13: //Delete this user profile
+                      dropUser(loggedInUser);
                       break;
                    case 14: //Log out
+                      logout(loggedInUser);
                       break;
                }
            }

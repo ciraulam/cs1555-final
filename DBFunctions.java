@@ -2,6 +2,7 @@ import java.sql.*;
 import java.text.*; 
 import java.util.Random; 
 import java.util.Scanner;
+import java.util.ArrayList;
 
 public class DBFunctions{
 
@@ -390,7 +391,7 @@ public class DBFunctions{
                System.out.println("5. Add users to group"); 
                System.out.println("6. Send a message to a user");
                System.out.println("7. Send a message to a group"); 
-               System.out.println("8. Display messages"); 
+               System.out.println("8. Display all messages"); 
                System.out.println("9. Display new messages");
                System.out.println("10. Search for a user");
                System.out.println("11. Three degrees of seperation: find a path between two users");
@@ -437,6 +438,28 @@ public class DBFunctions{
                            String friend = rs.getString("userID"); 
                            database.displayFriends(friend);
                        }
+                   case 4: //create a group
+                       break;
+                   case 5: //add users to a group
+                       break;
+                   case 6: //send message to user
+                      break;
+                   case 7: //send message to group
+                      break;
+                   case 8: //display all messages
+                      break;
+                   case 9: //display new messages
+                      break;
+                   case 10: //Search for a user
+                      break;
+                   case 11: //Three degrees of seperation: find a path between two users
+                      break;
+                   case 12: //Display top messages
+                      break;
+                   case 13: //Delete this user profile
+                      break;
+                   case 14: //Log out
+                      break;
                }
            }
          }
@@ -473,19 +496,6 @@ public class DBFunctions{
 **                                                                                                                                                  **
 **                                     ALL FUNCTIONS BELOW THIS LINE WRITTEN BY MATTHEW CIRAULA                                                     **
 *****************************************************************************************************************************************************/
-
-    /* Demonstrates functions written by Matthew Ciraula
-    */
-    private void mattDemo() {
-        login("1", "password");
-        confirmFriends("2");
-        createGroup("124", "new group", "this is new", 100, "1");
-        sendMessageToUser("1", "hello there", "2");
-        displayMessages("1");
-        searchForUser("1");
-        topMessages(2, 2);
-        logout("1");
-    }
 
     /* checks db for a matching userID and password combination
     ** if a match is found the last login value on their profile is updated
@@ -545,6 +555,35 @@ public class DBFunctions{
             // print line seperating the last message
             System.out.println(new String(new char[80]).replace("\0", "-") + "\n");
 
+            Scanner scan = new Scanner(System.in);
+            int option = -1;
+            String[] friendIDs = new int[count - 1];
+            String[] messages = new int[count - 1];
+            count = 0;
+            while (option != 0) {
+              System.out.println("Enter a friend request # you would like to confirm (0 to reject all remaining):");
+              option = scan.nextInt();
+              // if option is valid we insert it into the array
+              if(option > 0) {
+                resultSet.absolute(option);
+                friendIDs[count] = resultSet.getString(1);
+                messages[count] = resultSet.getString(2);
+              }
+              count++;
+            }
+
+            // finally loop over array and actually confirm friends
+            int count = 0;
+            while(friendIDs[count] != null) {
+              query = "INSERT into friends values(userID1, userID2, date, message) (?, ?, CURRENT_TIMESTAMP, ?)";
+              prepStatement = connection.PreparedStatementement(query);
+              prepStatement.setString(1, loggedInUser);
+              prepStatement.setString(2, friendIDs[count]);
+              prepStatement.setString(3, messages[count]);
+              prepStatement.executeUpdate();
+              count++;
+            }
+
             query = "SELECT gID, message FROM pendingGroupMembership WHERE userID = ?";
             prepStatement.setString(1, userID);
             resultSet = prepStatement.executeQuery();
@@ -559,6 +598,41 @@ public class DBFunctions{
                 System.out.println("From group: " + resultSet.getString(1));
                 System.out.println("Message: \n\t" + resultSet.getString(2));
             }
+            // GOTTA FIX THIS SHIT
+            int option = -1;
+            String[] gropuIDs = new int[count - 1];
+            count = 0;
+            while (option != 0) {
+              System.out.println("Enter a group request # you would like to confirm (0 to reject all remaining):");
+              option = scan.nextInt();
+              // if option is valid we insert it into the array
+              if(option > 0) {
+                resultSet.absolute(option);
+                groupIDs[count] = resultSet.getString(1);
+              }
+              count++;
+            }
+
+            // finally loop over array and actually confirm friends
+            int count = 0;
+            while(groupIDs[count] != null) {
+              query = "INSERT into groupMembership values(gID, userID) (?, ?)";
+              prepStatement = connection.PreparedStatementement(query);
+              prepStatement.setString(1, gropuIDs[count]);
+              prepStatement.setString(2, loggedInUser);
+              prepStatement.executeUpdate();
+              count++;
+            }
+            // delete all remaining friend/group requests
+            query = "DELETE from pendingFriends WHERE toID = ?";
+            prepStatement = connection.prepareStatement(query);
+            prepStatement.setString(1, loggedInUser);
+            prepStatement.executeUpdate();
+
+            query = "DELETE from pendingGroupMembership WHERE userID = ?";
+            prepStatement = connection.prepareStatement(query);
+            prepStatement.setString(1, loggedInUser);
+            prepStatement.executeUpdate();
         } catch(SQLException sqle) {
             System.out.println(sqle.getMessage());
         }
@@ -644,17 +718,22 @@ public class DBFunctions{
     */
     public void searchForUser(String input) {
         try {
-            query = "SELECT name FROM profile WHERE userID LIKE ?";
-            prepStatement = connection.prepareStatement(query);
-            prepStatement.setString(1, input);
-            resultSet = prepStatement.executeQuery();
+            // split string around " " so we can search for multiple patterns
+            String[] splitInput = input.split(" ");
+            ArrayList<String> results = new ArrayList<String>();
+            for(int i = 0; i < splitInput.length; i++) {
+              query = "SELECT name FROM profile WHERE userID LIKE ?";
+              prepStatement = connection.prepareStatement(query);
+              prepStatement.setString(1, splitInput[i]);
+              resultSet = prepStatement.executeQuery();
 
-            if(!resultSet.isBeforeFirst()) 
-                System.out.println("No results found");
-            else {
-                while(resultSet.next()) {
-                    System.out.println("Found user " + resultSet.getString(1));
-                }
+              if(!resultSet.isBeforeFirst()) 
+                  System.out.println("No results found matching " + splitInput[i]);
+              else {
+                  while(resultSet.next()) {
+                      System.out.println("Found user " + resultSet.getString(1));
+                  }
+              }
             }
         } catch(SQLException sqle) {
             System.out.println(sqle.getMessage());

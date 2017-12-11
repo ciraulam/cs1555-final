@@ -303,8 +303,8 @@ public class DBFunctions{
         public static void main(String[] args)
         { 
         String username, password;
-	username = "mac365"; //This is your username in oracle
-	password = "3916901"; //This is your password in oracle
+	username = ""; //This is your username in oracle                ######ENTER YOUR USERNAME AND PASSWORD HERE 
+	password = ""; //This is your password in oracle
 	
 	try{
 	    // Register the oracle driver.  
@@ -386,55 +386,57 @@ public class DBFunctions{
            
            if (loggedIn)
            {
-               
-               System.out.println("1. Initiate a friendship");
-               System.out.println("2. Confirm a friendship request");
-               System.out.println("3. Display friends"); 
-               System.out.println("4. Create a group");
-               System.out.println("5. Add users to group"); 
-               System.out.println("6. Send a message to a user");
-               System.out.println("7. Send a message to a group"); 
-               System.out.println("8. Display all messages"); 
-               System.out.println("9. Display new messages");
-               System.out.println("10. Search for a user");
-               System.out.println("11. Three degrees of seperation: find a path between two users");
-               System.out.println("12. Display top messages");
-               System.out.println("13. Delete this user profile");  //assuming that the only profile you can delete is your own 
-               System.out.println("14. Log out"); 
-               System.out.print("Select a menu option: ");
-               int choice2 = kb.nextInt(); 
-               kb.nextLine(); 
-               
-               switch(choice2)
+               int choice2 = 0; 
+               do 
                {
-                   case 1:  //initiate a friendship 
-                       System.out.print("user ID of the other user: ");
-                       String userID2 = kb.next(); 
-                       kb.nextLine(); 
-                       String name = database.getName(userID2); 
-                       if (name == null) {
-                           System.out.println("error obtaining user. "); 
-                         }
-                       else 
-                       {
-                           System.out.print("send friend request to " + name + "? (yes/no): ");
-                           String ans = kb.next(); 
-                           kb.nextLine();
-                           if (ans.equals("yes"))
-                           {
-                               
-                               System.out.println("enter message to send with the request:");
-                               String message = kb.nextLine(); 
-                               message = message.substring(0, 200); 
-                               database.initiateFriendship(loggedInUser, userID2, message);
-                           }
-                       }
-                       break;
-                   case 2: //confirm friendship 
-                       database.confirmFriends(loggedInUser);
-                       break; 
-                   case 3: //display friendships
-                       ResultSet rs = database.displayFriends(loggedInUser); 
+                System.out.println("1. Initiate a friendship");
+                System.out.println("2. Confirm a friendship request");
+                System.out.println("3. Display friends"); 
+                System.out.println("4. Create a group");
+                System.out.println("5. Add users to group"); 
+                System.out.println("6. Send a message to a user");
+                System.out.println("7. Send a message to a group"); 
+                System.out.println("8. Display all messages"); 
+                System.out.println("9. Display new messages");
+                System.out.println("10. Search for a user");
+                System.out.println("11. Three degrees of seperation: find a path between two users");
+                System.out.println("12. Display top messages");
+                System.out.println("13. Delete this user profile");  //assuming that the only profile you can delete is your own 
+                System.out.println("14. Log out"); 
+                System.out.print("Select a menu option: ");
+                choice2 = kb.nextInt(); 
+                kb.nextLine(); 
+
+                switch(choice2)
+                {
+                    case 1:  //initiate a friendship 
+                        System.out.print("user ID of the other user: ");
+                        String userID2 = kb.next(); 
+                        kb.nextLine(); 
+                        String name = database.getName(userID2); 
+                        if (name == null) {
+                            System.out.println("error obtaining user. "); 
+                          }
+                        else 
+                        {
+                            System.out.print("send friend request to " + name + "? (yes/no): ");
+                            String ans = kb.next(); 
+                            kb.nextLine();
+                            if (ans.equals("yes"))
+                            {
+
+                                System.out.println("enter message to send with the request:");
+                                String message = kb.nextLine(); 
+                                if (message.length() > 200) message = message.substring(0, 199); 
+                                database.initiateFriendship(loggedInUser, userID2, message);
+                            }
+                        }
+                        break;
+                    case 2: //confirm friendship 
+                        database.confirmFriends(loggedInUser);
+                        break; 
+                    case 3: //display friendships
+                        ResultSet rs = database.displayFriends(loggedInUser); 
                        
                        //display the friends of friends of the logged in user 
                        while(rs.next())
@@ -442,74 +444,85 @@ public class DBFunctions{
                            String friend = rs.getString("userID"); 
                            database.displayFriends(friend);
                        }
-                   case 4: //create a group
-                       System.out.print("Enter group ID: ");
-                       String gID = kb.nextLine();
-                       System.out.print("Enter group name: ");
-                       String name1= kb.nextLine();
-                       System.out.print("Enter description: ");
-                       String description = kb.nextLine();
-                       System.out.print("Enter membership limit: ");
-                       int limit = kb.nextInt();
-                       kb.nextLine();
-                       database.createGroup(gID, name1, description, limit, loggedInUser);
-                       break;
-                   case 5: //add users to a group
-                       System.out.print("Enter user ID to invite: ");
-                       String userID = kb.nextLine();
-                       System.out.print("Enter group ID: ");
-                       String gID1 = kb.nextLine();
+                        //display the friends of friends of the logged in user 
+                        while(rs.next())
+                        {
+                            String friend = rs.getString("userID"); 
+                            database.displayFriends(friend);
+                        }
+                    case 4: //create a group
+                        System.out.print("Enter group ID: ");
+                        String gID = kb.nextLine();
+                        System.out.print("Enter group name: ");
+                        String name1= kb.nextLine();
+                        System.out.print("Enter description: ");
+                        String description = kb.nextLine();
+                        System.out.print("Enter membership limit: ");
+                        int limit = kb.nextInt();
+                        kb.nextLine();
+                        database.createGroup(gID, name1, description, limit, loggedInUser);
+                        break;
+                    case 5: //add users to a group
+                        System.out.print("Enter user ID to invite: ");
+                        String userID = kb.nextLine();
+                        System.out.print("Enter group ID: ");
+                        String gID1 = kb.nextLine();
+                        System.out.print("Enter message: ");
+                        
+                        String message = kb.nextLine();
+                        if (message.length() > 200) message = message.substring(0,199);
+                        database.initiateAddingGroup(userID, gID1, message);
+                        break;
+                    case 6: //send message to user
+                       System.out.print("Enter userID of recipient: ");
+                       String toUserID = kb.nextLine();
                        System.out.print("Enter message: ");
-                       String message = kb.nextLine();
-                       database.initiateAddingGroup(userID, gID1, message);
+                       String newMessage = kb.nextLine();
+                       if (newMessage.length() > 200) newMessage = newMessage.substring(0, 199);
+                       database.sendMessageToUser(loggedInUser, newMessage, toUserID);
                        break;
-                   case 6: //send message to user
-                      System.out.print("Enter userID of recipient: ");
-                      String toUserID = kb.nextLine();
-                      System.out.print("Enter message: ");
-                      String newMessage = kb.nextLine();
-                      database.sendMessageToUser(loggedInUser, newMessage, toUserID);
-                      break;
-                   case 7: //send message to group
-                      System.out.print("Enter group ID: ");
-                      String gIDd = kb.nextLine();
-                      System.out.print("Enter message: ");
-                      String messaged = kb.nextLine();
-                      database.sendMessageToGroup(gIDd, loggedInUser, messaged);
-                      break;
-                   case 8: //display all messages
-                      database.displayMessages(loggedInUser);
-                      break;
-                   case 9: //display new messages
-                      database.displayNewMessages(loggedInUser);
-                      break;
-                   case 10: //Search for a user
-                      System.out.print("Enter search: ");
-                      String input = kb.nextLine();
-                      database.searchForUser(input);
-                      break;
-                   case 11: //Three degrees of seperation: find a path between two users
-                      System.out.print("Enter first userID: ");
-                      String userID1 = kb.nextLine();
-                      System.out.print("Enter second userID: ");
-                      String userID2l = kb.nextLine();
-                      database.threeDegrees(userID1, userID2l);
-                      break;
-                   case 12: //Display top messages
-                      System.out.print("Enter amount of months to search: ");
-                      int months = kb.nextInt();
-                      kb.nextLine();
-                      System.out.print("Enter number of users to include in results: ");
-                      int users = kb.nextInt();
-                      database.topMessages(months, users);
-                      break;
-                   case 13: //Delete this user profile
-                      database.dropUser(loggedInUser);
-                      break;
-                   case 14: //Log out
-                      database.logout(loggedInUser);
-                      break;
-               }
+                    case 7: //send message to group
+                       System.out.print("Enter group ID: ");
+                       String gIDd = kb.nextLine();
+                       System.out.print("Enter message: ");
+                       String messaged = kb.nextLine();
+                       if (messaged.length() > 200) messaged = messaged.substring(0, 199);
+                       database.sendMessageToGroup(gIDd, loggedInUser, messaged);
+                       break;
+                    case 8: //display all messages
+                       database.displayMessages(loggedInUser);
+                       break;
+                    case 9: //display new messages
+                       database.displayNewMessages(loggedInUser);
+                       break;
+                    case 10: //Search for a user
+                       System.out.print("Enter search: ");
+                       String input = kb.nextLine();
+                       database.searchForUser(input);
+                       break;
+                    case 11: //Three degrees of seperation: find a path between two users
+                       System.out.print("Enter first userID: ");
+                       String userID1 = kb.nextLine();
+                       System.out.print("Enter second userID: ");
+                       String userID2l = kb.nextLine();
+                       database.threeDegrees(userID1, userID2l);
+                       break;
+                    case 12: //Display top messages
+                       System.out.print("Enter amount of months to search: ");
+                       int months = kb.nextInt();
+                       kb.nextLine();
+                       System.out.print("Enter number of users to include in results: ");
+                       int users = kb.nextInt();
+                       database.topMessages(months, users);
+                       break;
+                    case 13: //Delete this user profile
+                       database.dropUser(loggedInUser);
+                       break;
+                    case 14: //Log out
+                       database.logout(loggedInUser);
+                       break;
+                }
+               } while(choice2 != 14);
            }
          }
        while (!((choice <= 0) && (choice > 2)));

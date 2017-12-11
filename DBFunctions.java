@@ -446,22 +446,22 @@ public class DBFunctions{
                        System.out.print("Enter group ID: ");
                        String gID = kb.nextLine();
                        System.out.print("Enter group name: ");
-                       String uName = kb.nextLine();
+                       String name1= kb.nextLine();
                        System.out.print("Enter description: ");
                        String description = kb.nextLine();
                        System.out.print("Enter membership limit: ");
                        int limit = kb.nextInt();
                        kb.nextLine();
-                       database.createGroup(gID, uName, description, limit, loggedInUser);
+                       database.createGroup(gID, name1, description, limit, loggedInUser);
                        break;
                    case 5: //add users to a group
                        System.out.print("Enter user ID to invite: ");
                        String userID = kb.nextLine();
                        System.out.print("Enter group ID: ");
-                       String groupID = kb.nextLine();
+                       String gID1 = kb.nextLine();
                        System.out.print("Enter message: ");
                        String message = kb.nextLine();
-                       database.initiateAddingGroup(userID, groupID, message);
+                       database.initiateAddingGroup(userID, gID1, message);
                        break;
                    case 6: //send message to user
                       System.out.print("Enter userID of recipient: ");

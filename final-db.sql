@@ -28,7 +28,7 @@ CREATE TABLE friends (
 	CONSTRAINT fk_friends_userID1 FOREIGN KEY(userID1) REFERENCES profile(userID) ON DELETE CASCADE,
 	CONSTRAINT fk_friends_userID2 FOREIGN KEY(userID2) REFERENCES profile(userID) ON DELETE CASCADE
 );
-
+--
 CREATE TABLE pendingFriends (
 	fromID  varchar2(20),
 	toID    varchar2(20),

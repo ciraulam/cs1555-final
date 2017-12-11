@@ -303,8 +303,8 @@ public class DBFunctions{
         public static void main(String[] args)
         { 
         String username, password;
-	username = "iyb7"; //This is your username in oracle
-	password = "3970115"; //This is your password in oracle
+	username = "mac365"; //This is your username in oracle
+	password = "3916901"; //This is your password in oracle
 	
 	try{
 	    // Register the oracle driver.  
@@ -431,7 +431,7 @@ public class DBFunctions{
                        }
                        break;
                    case 2: //confirm friendship 
-                       confirmFriends(loggedInUser);
+                       database.confirmFriends(loggedInUser);
                        break; 
                    case 3: //display friendships
                        ResultSet rs = database.displayFriends(loggedInUser); 
@@ -446,53 +446,54 @@ public class DBFunctions{
                        System.out.print("Enter group ID: ");
                        String gID = kb.nextLine();
                        System.out.print("Enter group name: ");
-                       String name = kb.nextLine();
+                       String uName = kb.nextLine();
                        System.out.print("Enter description: ");
                        String description = kb.nextLine();
                        System.out.print("Enter membership limit: ");
                        int limit = kb.nextInt();
                        kb.nextLine();
-                       createGroup(gID, name, description, limit, loggedInUser);
+                       database.createGroup(gID, uName, description, limit, loggedInUser);
                        break;
                    case 5: //add users to a group
                        System.out.print("Enter user ID to invite: ");
                        String userID = kb.nextLine();
                        System.out.print("Enter group ID: ");
-                       String gID = kb.nextLine();
+                       String groupID = kb.nextLine();
                        System.out.print("Enter message: ");
                        String message = kb.nextLine();
-                       initiateAddingGroup(userID, gID, message);
+                       database.initiateAddingGroup(userID, groupID, message);
                        break;
                    case 6: //send message to user
                       System.out.print("Enter userID of recipient: ");
                       String toUserID = kb.nextLine();
                       System.out.print("Enter message: ");
-                      String message = kb.nextLine();
-                      sendMessageToUser(loggedInUser, message, toUserID);
+                      String newMessage = kb.nextLine();
+                      database.sendMessageToUser(loggedInUser, newMessage, toUserID);
                       break;
                    case 7: //send message to group
                       System.out.print("Enter group ID: ");
-                      String gID = kb.nextLine();
+                      String gIDd = kb.nextLine();
                       System.out.print("Enter message: ");
-                      String message = kb.nextLine();
-                      sendMessageToGroup(gID, loggedInUser, message);
+                      String messaged = kb.nextLine();
+                      database.sendMessageToGroup(gIDd, loggedInUser, messaged);
                       break;
                    case 8: //display all messages
-                      displayMessages(loggedInUser);
+                      database.displayMessages(loggedInUser);
                       break;
                    case 9: //display new messages
-                      displayNewMessages(loggedInUser);
+                      database.displayNewMessages(loggedInUser);
                       break;
                    case 10: //Search for a user
                       System.out.print("Enter search: ");
                       String input = kb.nextLine();
-                      searchForUser(input);
+                      database.searchForUser(input);
                       break;
                    case 11: //Three degrees of seperation: find a path between two users
                       System.out.print("Enter first userID: ");
                       String userID1 = kb.nextLine();
                       System.out.print("Enter second userID: ");
-                      String userID2 = kb.nextLine();
+                      String userID2l = kb.nextLine();
+                      database.threeDegrees(userID1, userID2l);
                       break;
                    case 12: //Display top messages
                       System.out.print("Enter amount of months to search: ");
@@ -500,13 +501,13 @@ public class DBFunctions{
                       kb.nextLine();
                       System.out.print("Enter number of users to include in results: ");
                       int users = kb.nextInt();
-                      topMessages(months, users);
+                      database.topMessages(months, users);
                       break;
                    case 13: //Delete this user profile
-                      dropUser(loggedInUser);
+                      database.dropUser(loggedInUser);
                       break;
                    case 14: //Log out
-                      logout(loggedInUser);
+                      database.logout(loggedInUser);
                       break;
                }
            }
@@ -605,8 +606,8 @@ public class DBFunctions{
 
             Scanner scan = new Scanner(System.in);
             int option = -1;
-            String[] friendIDs = new int[count - 1];
-            String[] messages = new int[count - 1];
+            String[] friendIDs = new String[count - 1];
+            String[] messages = new String[count - 1];
             count = 0;
             while (option != 0) {
               System.out.println("Enter a friend request # you would like to confirm (0 to reject all remaining):");
@@ -621,10 +622,10 @@ public class DBFunctions{
             }
 
             // finally loop over array and actually confirm friends
-            int count = 0;
+            count = 0;
             while(friendIDs[count] != null) {
               query = "INSERT into friends values(userID1, userID2, date, message) (?, ?, CURRENT_TIMESTAMP, ?)";
-              prepStatement = connection.PreparedStatementement(query);
+              prepStatement = connection.prepareStatement(query);
               prepStatement.setString(1, loggedInUser);
               prepStatement.setString(2, friendIDs[count]);
               prepStatement.setString(3, messages[count]);
@@ -646,9 +647,8 @@ public class DBFunctions{
                 System.out.println("From group: " + resultSet.getString(1));
                 System.out.println("Message: \n\t" + resultSet.getString(2));
             }
-            // GOTTA FIX THIS SHIT
-            int option = -1;
-            String[] gropuIDs = new int[count - 1];
+            option = -1;
+            String[] groupIDs = new String[count - 1];
             count = 0;
             while (option != 0) {
               System.out.println("Enter a group request # you would like to confirm (0 to reject all remaining):");
@@ -662,11 +662,11 @@ public class DBFunctions{
             }
 
             // finally loop over array and actually confirm friends
-            int count = 0;
+            count = 0;
             while(groupIDs[count] != null) {
               query = "INSERT into groupMembership values(gID, userID) (?, ?)";
-              prepStatement = connection.PreparedStatementement(query);
-              prepStatement.setString(1, gropuIDs[count]);
+              prepStatement = connection.prepareStatement(query);
+              prepStatement.setString(1, groupIDs[count]);
               prepStatement.setString(2, loggedInUser);
               prepStatement.executeUpdate();
               count++;

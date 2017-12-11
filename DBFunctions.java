@@ -3,7 +3,7 @@ import java.text.*;
 import java.util.Random; 
 import java.util.Scanner;
 import java.util.ArrayList;
-
+//
 public class DBFunctions{
 
     private static Connection connection; //used to hold the jdbc connection to the DB
